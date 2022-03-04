@@ -1,4 +1,5 @@
 #include "dht.h"
+#include <LiquidCrystal.h> 
 #define dht_apin A2 // Analog Pin sensor is connected to
 //#define SensorPin A1
 #define SensorPin A1         // the pH meter Analog output is connected with the Arduino’s Analog
@@ -16,6 +17,8 @@ String msg="Enter your choice:";
 String op;
 const int PIR_SENSOR_OUTPUT_PIN = 4;  /* PIR sensor O/P pin */
 int warm_up;
+int Contrast=0;
+LiquidCrystal lcd(10, 9, 5, 8, 2, 7); 
 void setup() 
 {
   // put your setup code here, to run once:
@@ -29,6 +32,9 @@ void setup()
   //Serial.println("with Arduino UNO R3");
    pinMode(PIR_SENSOR_OUTPUT_PIN, INPUT);
   Serial.begin(9600); /* Define baud rate for serial communication */
+  analogWrite(6,Contrast);
+  lcd.begin(16, 2);
+  
 }
 
 void loop() 
@@ -36,12 +42,21 @@ void loop()
   DHT.read11(dht_apin);
   sensorValue= analogRead (A0);
   sensorValue= map (sensorValue,550,10,0,100);
-  //Serial.println(DHT.humidity);
+  int t=35;
+  lcd.setCursor(0,0);
+  lcd.print("moist= ");
+  lcd.print(sensorValue);
+  lcd.setCursor(0,1);
+  lcd.print("temp:");
+  lcd.print(t);
   Serial.println(msg);
   while(Serial.available()==0)
   {
   
   }
+  /*lcd.setCursor(0,1);
+  lcd.print("moist= ");
+  lcd.print(sensorValue); */ 
   int inByte = Serial.read();
   switch (inByte)
   {
