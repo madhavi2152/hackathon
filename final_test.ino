@@ -14,6 +14,8 @@ dht DHT;
 String crop;
 String msg="Enter your choice:";
 String op;
+const int PIR_SENSOR_OUTPUT_PIN = 4;  /* PIR sensor O/P pin */
+int warm_up;
 void setup() 
 {
   // put your setup code here, to run once:
@@ -23,9 +25,10 @@ void setup()
    pinMode(trigPin, OUTPUT); // Sets the trigPin as an OUTPUT
   pinMode(echoPin, INPUT); // Sets the echoPin as an INPUT
   Serial.begin(9600); // // Serial Communication is starting with 9600 of baudrate speed
-  Serial.println("Ultrasonic Sensor HC-SR04 Test"); // print some text in Serial Monitor
-  Serial.println("with Arduino UNO R3");
- 
+  //Serial.println("Ultrasonic Sensor HC-SR04 Test"); // print some text in Serial Monitor
+  //Serial.println("with Arduino UNO R3");
+   pinMode(PIR_SENSOR_OUTPUT_PIN, INPUT);
+  Serial.begin(9600); /* Define baud rate for serial communication */
 }
 
 void loop() 
@@ -33,7 +36,7 @@ void loop()
   DHT.read11(dht_apin);
   sensorValue= analogRead (A0);
   sensorValue= map (sensorValue,550,10,0,100);
-  Serial.println(DHT.humidity);
+  //Serial.println(DHT.humidity);
   Serial.println(msg);
   while(Serial.available()==0)
   {
@@ -51,7 +54,8 @@ void loop()
   
       Serial.println("let us search for suitable crop");
       Serial.println("please wait until we generate our results...!!");
-      delay(2000);
+      
+      
       if(DHT.temperature>=22 && DHT.temperature<=37 && DHT.humidity>=60 && DHT.humidity<=80 && sensorValue>=35 && sensorValue<=55)
       {
         String op="HURRAY!suitable crop is  RICE";
@@ -87,14 +91,14 @@ void loop()
           Serial.println(op); 
         
         }
-         if(sensorValue>=15 && sensorValue<=25)
+         else if(sensorValue>=15 && sensorValue<=25)
         {
          Serial.println("it is loamy soil");
           String op="HURRAY!suitable crop is  GRAMS";
           Serial.println(op); 
         
         }
-         if(sensorValue>=15 && sensorValue<=25)
+        else if(sensorValue>=15 && sensorValue<=25)
         {
           Serial.println("it is clay soil");
           String op="HURRAY!suitable crop is  GRAMS";
@@ -107,7 +111,9 @@ void loop()
       String op="HURRAY!suitable crop is  sugarcane";
       Serial.println(op);
      }
-     else if(DHT.temperature>=21 && DHT.temperature<=30 && DHT.humidity>=11.1 && DHT.humidity<=25 && sensorValue>=10.5 && sensorValue<=22.0 )
+     //String op="Oops..! Thins land is not suitable for farming.. :(";
+      //Serial.println(op);
+     if(DHT.temperature>=21 && DHT.temperature<=30 && DHT.humidity>=11.1 && DHT.humidity<=25 && sensorValue>=10.5 && sensorValue<=22.0 )
      {
       String op="HURRAY!suitable crop is  COTTON";
       Serial.println(op);
@@ -131,11 +137,11 @@ void loop()
      
      }
      else
-     {
-      String op="Oops..! Thins land is not suitable for farming.. :(";
-      Serial.println(op);
-     // Serial.println("Oops..! This land is not suitable for farming.. :(");
-     }
+    {
+    //String op="Oops..! Thins land is not suitable for farming.. :(";
+    Serial.println(op);
+     Serial.println("Oops..! This land is not suitable for farming.. :(");
+    }
      delay(2000);
       
      break;
@@ -143,17 +149,31 @@ void loop()
     
   case '2':
   {
-    if(sensorValue<0)
-      {
-         Serial.println("Moisture level is low..! Don't worry...! Watering plants");
-
-        delay(1000);
-        digitalWrite(3, HIGH);  
-      }
-      else{
-        delay(1000);
-        digitalWrite(3, LOW); 
-      }
+    
+    while(sensorValue<0)
+    {
+      sensorValue= analogRead (A0);
+      sensorValue= map (sensorValue,550,10,0,100);
+      delay(1000);
+      if(sensorValue<0)
+        {
+          Serial.println("Moisture level is low..! Don't worry...! Watering plants");
+          delay(1000);
+          digitalWrite(3, HIGH);  
+        }
+      else
+        {
+          Serial.println("Don't worry...! Now, soil moisture sensor is alright..!");
+          delay(1000);
+          digitalWrite(3, LOW); 
+        }
+    }
+    if(sensorValue>0)
+        {
+          Serial.println("Don't worry...! Soil moisture sensor is alright..!");
+          delay(1000);
+          digitalWrite(3, LOW); 
+        }
     /*DHT.read11(dht_apin);
     Serial.print("Current humidity = ");
     Serial.print(DHT.humidity);
@@ -186,11 +206,36 @@ void loop()
   // Calculating the distance
   distance = duration * 0.034 / 2; // Speed of sound wave divided by 2 (go and back)
   // Displays the distance on the Serial Monitor
-  Serial.print("OMG..!Pests identified!! Distance: ");
-  Serial.print(distance);
-  Serial.println(" cm");
+  Serial.println("OMG..!Pests identified!! ");
+  //Serial.print(distance);
+  //Serial.println(" cm");
   delay(2000);
-  Serial.println("Finding ph value ");
+
+
+  Serial.println("Trying to identify the pest using PIR sensor");
+  int sensor_output;
+  sensor_output = digitalRead(PIR_SENSOR_OUTPUT_PIN);
+  if( sensor_output == LOW )
+  {
+    if( warm_up == 1 )
+     {
+      Serial.print("Warming Up\n\n");
+      warm_up = 0;
+      delay(2000);
+    }
+    Serial.print("No pest detected in sight\n\n");
+    delay(1000);
+  }
+  else
+  {
+    Serial.print("pest detected\n\n");    
+    warm_up = 1;
+    delay(1000);
+  } 
+  delay(2000); 
+  
+
+  Serial.println("Checking ph value");
   for(int i=0;i<10;i++)       //Get 10 sample value from the sensor for smooth the value
   { 
     buf[i]=analogRead(SensorPin);
@@ -218,6 +263,13 @@ void loop()
   Serial.println(" ");
   //digitalWrite(13, HIGH);       
   delay(800);
+  if(phValue<6||phValue>7.5)
+  {
+    Serial.println("Oops...!! The ph of soil is not suitable for the crop growth...!");
+  }
+  delay(1000);
+  
+  
     break;
   }
   }
